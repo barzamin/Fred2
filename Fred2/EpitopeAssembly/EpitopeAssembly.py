@@ -912,7 +912,8 @@ class EpitopeAssemblyWithSpacer(object):
 
         self.spacer = opt_spacer
         #print "solve assembly with generated adjacency matrix"
-        assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix)
+        assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix,
+                                    verbosity=self.__verbosity)
         res = assembler.solve(options=options)
 
         #generate output
@@ -1005,7 +1006,8 @@ class EpitopeAssemblyWithSpacer(object):
 
         self.spacer = opt_spacer
         #print "solve assembly with generated adjacency matrix"
-        assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix)
+        assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix,
+                                    verbosity=self.__verbosity)
         res = assembler.approximate()
 
         #generate output
