@@ -111,32 +111,46 @@ class EpitopeAssembly(object):
                     edge_matrix[("Dummy",p)] = 0
         self.__seq_to_pep = seq_to_pep
 
-        #3. initialize ILP
+        # 3. initialize ILP
+        # uses Miller-Tucker-Zemlin ILP relaxation of TSP to solve exactly
         self.__solver = SolverFactory(solver)
         model = ConcreteModel()
 
         E = filter(lambda x: x != "Dummy", seq_to_pep.keys())
-        model.E = Set(initialize=E)
-        model.E_prime = Set(initialize=seq_to_pep.keys())
-        model.ExE = Set(initialize=itr.permutations(E,2), dimen=2)
+        model.E = Set(initialize=E) # set of peptide nodes
+        model.E_prime = Set(initialize=seq_to_pep.keys()) # set of peptide nodes + dummy
+        model.ExE = Set(initialize=itr.permutations(E,2), dimen=2) # set of all pairs of peptides
 
+        # edge costs
         model.w_ab = Param(model.E_prime, model.E_prime, initialize=edge_matrix)
+        # number of nodes (incl dummy)
         model.card = Param(initialize=len(model.E_prime))
 
+        # edge matrix
         model.x = Var(model.E_prime, model.E_prime, within=Binary)
+        # Miller-Tucker-Zemlin variables
         model.u = Var(model.E, domain=PositiveIntegers, bounds=(2,model.card))
 
+        # minimize travel cost
         model.obj =Objective(
             rule=lambda mode: sum( model.w_ab[a,b]*model.x[a,b] for a in model.E_prime
                                    for b in model.E_prime if a != b),
             sense=minimize)
 
+        # all peptides (incl dummy) have one ingoing edge
         model.tour_constraint_1 = Constraint(model.E_prime,
                                              rule=lambda model, a:
                                              sum(model.x[a,b] for b in model.E_prime if a != b) == 1)
+        # all peptides (incl dummy) have one outgoing edge
         model.tour_constraint_2 = Constraint(model.E_prime,
                                              rule=lambda model, a:
                                              sum(model.x[b,a] for b in model.E_prime if a != b) == 1)
+
+        # likely unnecessary but guarding against problems with model parameters
+        model.no_self_loop = Constraint(model.E_prime,
+                                        rule=lambda model, a: model.x[a,a] == 0)
+
+        # Miller-Tucker-Zemlin constraints
         model.cardinality_constraint = Constraint(model.ExE,
                                                   rule=lambda model, a, b:
                                                   model.u[a]-model.u[b]+1 <= (model.card -1)*(1-model.x[a, b]))
@@ -152,7 +166,7 @@ class EpitopeAssembly(object):
 
         .. note::
 
-            This can take quite long and should not be done for more and 30 epitopes max!
+            This can take quite long and should not be done for more than 30 epitopes max!
 
         :param str options: Solver specific options as string (will not be checked for correctness)
         :return: An order list of the :class:`~Fred2.Core.Peptide.Peptide` (based on the string-of-beads ordering)
@@ -169,7 +183,7 @@ class EpitopeAssembly(object):
 
     def approximate(self):
         """
-        Approximates the eptiope assembly problem by applying Lin-Kernighan traveling salesman heuristic
+        Approximates the epitope assembly problem by applying Lin-Kernighan traveling salesman heuristic
 
         .. note::
 
