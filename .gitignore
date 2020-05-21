@@ -9,3 +9,4 @@ dist/*
 .idea
 *.pyc
 Fred2/tutorials/.ipynb_checkpoints/*
+venv/
