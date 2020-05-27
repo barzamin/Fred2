@@ -914,13 +914,20 @@ class EpitopeAssemblyWithSpacer(object):
         adj_matrix = {}
         inf = float("inf")
         #print res
-        #print "find best scoring spacer for each epitope pair"
+        print "==> find best scoring spacer for each epitope pair"
         for ei, ej, score, epi, spacer, c1, c2, non_c in res:
-                #print ei,spacer,ej,min(c1,c2),c1,c2
+                print ei,spacer,ej,min(c1,c2),c1,c2
                 if adj_matrix.get((ei, ej), inf) > -min(c1,c2):
                     adj_matrix[(ei, ej)] = -min(c1,c2)
                     opt_spacer[(ei, ej)] = spacer
 
+        if self.__n_boundary is not None:
+            for ei in self.__peptides:
+                adj_matrix[(str(ei), str(self.__n_boundary))] = 0 # these don't matter; we add constraints
+
+        if self.__c_boundary is not None:
+            for ej in self.__peptides:
+                adj_matrix[(str(self.__c_boundary), str(ej))] = 0
         self.spacer = opt_spacer
         #print "solve assembly with generated adjacency matrix"
         assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix,
