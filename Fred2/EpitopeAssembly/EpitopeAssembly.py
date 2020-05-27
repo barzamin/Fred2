@@ -165,9 +165,20 @@ class EpitopeAssembly(object):
                                              rule=lambda model, a:
                                              sum(model.x[b,a] for b in model.E_prime if a != b) == 1)
 
+        if n_boundary is not None:
+            model.n_boundary_constraint = Constraint(
+                rule=lambda model:
+                    sum(model.x[a,str(n_boundary)] for a in model.E if a != str(n_boundary)) == 0)
+
+        if c_boundary is not None:
+            model.c_boundary_constraint = Constraint(
+                rule=lambda model:
+                    sum(model.x[str(c_boundary), b] for b in model.E if b != str(c_boundary)) == 0)
+
+
         # likely unnecessary but guarding against problems with model parameters
-        model.no_self_loop = Constraint(model.E_prime,
-                                        rule=lambda model, a: model.x[a,a] == 0)
+        model.no_self_loop_constraint = Constraint(model.E_prime,
+                                                   rule=lambda model, a: model.x[a,a] == 0)
 
         # Miller-Tucker-Zemlin constraints
         model.cardinality_constraint = Constraint(model.ExE,
@@ -947,6 +958,7 @@ class EpitopeAssemblyWithSpacer(object):
         if self.__c_boundary is not None:
             for ej in self.__peptides:
                 adj_matrix[(str(self.__c_boundary), str(ej))] = 0
+
         self.spacer = opt_spacer
         print "==> solve assembly with generated adjacency matrix"
         assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix,
