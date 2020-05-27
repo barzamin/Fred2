@@ -52,8 +52,8 @@ class EpitopeAssembly(object):
         :param int verbosity: Specifies how verbos the class will be, 0 means normal, >0 debug mode
     """
 
-    def __init__(self, peptides, pred, solver="glpk", weight=0.0, matrix=None, verbosity=0):
-
+    def __init__(self, peptides, pred, solver="glpk", weight=0.0, matrix=None, verbosity=0,
+                 n_boundary=None, c_boundary=None):
         if not isinstance(pred, ACleavageSitePrediction):
             raise ValueError("Cleave site predictor must be of type ACleavageSitePrediction")
 
@@ -68,6 +68,11 @@ class EpitopeAssembly(object):
 
         pep_tmp = peptides[:]
         pep_tmp.append("Dummy")
+        if n_boundary is not None:
+            pep_tmp.append(n_boundary)
+        if c_boundary is not None:
+            pep_tmp.append(c_boundary)
+
         edge_matrix = {}
         fragments = {}
         seq_to_pep = {}
@@ -109,6 +114,7 @@ class EpitopeAssembly(object):
                 if p != "Dummy":
                     edge_matrix[(p,"Dummy")] = 0
                     edge_matrix[("Dummy",p)] = 0
+
         self.__seq_to_pep = seq_to_pep
 
         # 3. initialize ILP
@@ -929,9 +935,10 @@ class EpitopeAssemblyWithSpacer(object):
             for ej in self.__peptides:
                 adj_matrix[(str(self.__c_boundary), str(ej))] = 0
         self.spacer = opt_spacer
-        #print "solve assembly with generated adjacency matrix"
+        print "==> solve assembly with generated adjacency matrix"
         assembler = EpitopeAssembly(self.__peptides, self.__clev_pred, solver=self.__solver, matrix=adj_matrix,
-                                    verbosity=self.__verbosity)
+                                    verbosity=self.__verbosity,
+                                    n_boundary=self.__n_boundary, c_boundary=self.__c_boundary)
         res = assembler.solve(options=options)
 
         #generate output
