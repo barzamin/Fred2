@@ -891,11 +891,21 @@ class EpitopeAssemblyWithSpacer(object):
         if not epi_pssms:
             raise ValueError("Selected alleles with epitope length are not supported by the prediction method.")
 
-        #print "run spacer designs in parallel using multiprocessing"
-        res = pool.map(_runs_lexmin, ((str(ei), str(ej), i, en, cn, cl_pssm, epi_pssms, cleav_pos, allele_prob,
-                                      self.__alpha, self.__thresh, self.__solver, self.__beta, options)
-                                      for i in xrange(start, self.__k+1)
-                                      for ei, ej in itr.product(self.__peptides, repeat=2) if ei != ej))
+        def design(iter):
+            return pool.map(_runs_lexmin, ((str(ei), str(ej), i, en, cn, cl_pssm, epi_pssms, cleav_pos, allele_prob,
+                                           self.__alpha, self.__thresh, self.__solver, self.__beta, options)
+                                           for ei, ej in iter
+                                           for i in xrange(start, self.__k + 1)))
+
+        print "==> run spacer designs in parallel using multiprocessing"
+        print "[*] designing internal spacers"
+        res = design(filter(lambda (ei, ej): ei != ej, itr.product(self.__peptides, repeat=2)))
+        if self.__n_boundary is not None:
+            print "[*] designing n-terminus spacers"
+            res.extend(design((self.__n_boundary, ej) for ej in self.__peptides))
+        if self.__c_boundary is not None:
+            print "[*] designing c-terminus spacers"
+            res.extend(design((ei, self.__c_boundary) for ei in self.__peptides))
         pool.close()
         pool.join()
 
