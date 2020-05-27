@@ -739,7 +739,7 @@ class EpitopeAssemblyWithSpacer(object):
     """
 
     def __init__(self, peptides, cleav_pred, epi_pred, alleles, k=5, en=9, threshold=None, solver="glpk", alpha=0.99,
-                 beta=0, verbosity=0):
+                 beta=0, verbosity=0, n_boundary=None, c_boundary=None):
         """
 
         :param peptides: A list of :class:`~Fred2.Core.Peptide.Peptide` which shell be arranged
@@ -831,6 +831,8 @@ class EpitopeAssemblyWithSpacer(object):
         self.__alpha = alpha
         self.__beta = beta
         self.__peptides = list(peptides)
+        self.__n_boundary = n_boundary
+        self.__c_boundary = c_boundary
         #model construction for spacer design
 
     def solve(self, start=0, threads=None, options=None):
@@ -855,7 +857,6 @@ class EpitopeAssemblyWithSpacer(object):
         options = dict() if options is None else options
         threads = mp.cpu_count() if threads is None else threads
         pool = mp.Pool(threads)
-
 
         #prepare parameters
         cn = min(self.__clev_pred.supportedLength)
