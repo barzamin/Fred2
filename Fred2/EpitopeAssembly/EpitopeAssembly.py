@@ -138,9 +138,22 @@ class EpitopeAssembly(object):
         model.u = Var(model.E, domain=PositiveIntegers, bounds=(2,model.card))
 
         # minimize travel cost
-        model.obj =Objective(
-            rule=lambda mode: sum( model.w_ab[a,b]*model.x[a,b] for a in model.E_prime
-                                   for b in model.E_prime if a != b),
+        def objective_rule(model):
+            def predicate(a, b):
+                if a == b:
+                    return False
+                if n_boundary is not None and b == str(n_boundary):
+                    return False
+                if c_boundary is not None and a == str(c_boundary):
+                    return False
+
+                return True
+
+            return sum(model.w_ab[a, b] * model.x[a, b] for a in model.E_prime
+                for b in model.E_prime if predicate(a, b))
+
+        model.obj = Objective(
+            rule=objective_rule,
             sense=minimize)
 
         # all peptides (incl dummy) have one ingoing edge
